@@ -1,0 +1,5 @@
+{
+    "token": "Discord bot token here",
+    "GameChatChannel": "Discord channel id here",
+    "StartCommand": "java -jar -Xmx8G -Xms8G './server.jar'"
+}
