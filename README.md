@@ -14,7 +14,7 @@ You can copy the bot token from where you created the account for the bot (do no
 To get the id of a channel you have to enable developer mode in Discord (settings > app settings > appearance > developer mode) then right click a channel and click "copy id" and paste it in the `config.json` file as well and save it. 
 Once that's done, you have to navigate to the folder in a terminal or CMD, then run "`npm init`". 
 It should ask you for a few things, but you can just hold the enter key (unless there are multiple spaces in the folder name, in which case just type something and press enter).
-Then run "`npm install`", iirc it may ask you for confirmation to continue, just type y and press enter.
+Then run "`npm install discord.js`" and "`npm install node-pty`" (on windows, node-pty requires visual studio to be installed with c++ development tools, you can probably work around this by using WSL, which is more complicated to set up), iirc it may ask you for confirmation to continue, just type y and press enter.
 That's it, you can now start the server and bot by typing "`node .`".
 
 
