@@ -1,6 +1,7 @@
 # Discord to Minecraft chat bot
 
-Make the chat on your Minecraft server appear on your Discord server, and the other way around.
+Make the chat on your Minecraft server appear on your Discord server, and the other way around. 
+This doesn't require any mods or plugins and should be compatible with most versions of the game, including snapshots and modded versions.
 
 
 ## Installation
