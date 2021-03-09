@@ -2,6 +2,10 @@ const Discord = require('discord.js');
 
 const bot = new Discord.Client();
 
+const fetch = require('node-fetch');
+
+const jimp = require('jimp');
+
 const {token, GameChatChannel, StartCommand} = require('./config.json');
 
 var shell = process.platform == 'win32' ? 'powershell.exe' : 'bash';
@@ -25,9 +29,33 @@ var ptyProcess = pty.spawn(shell, [],
 
 ptyProcess.write(`${StartCommand}\r`);
 
-bot.on('ready', () =>
+var webhook;
+
+bot.on('ready', async () =>
 {
     console.log(`Logged in as ${bot.user.tag}!`);
+
+    var GameChannel = await bot.channels.cache.find(c => c.id == GameChatChannel);
+
+    var AllWebhooks = (await GameChannel.fetchWebhooks()).array();
+
+    if (AllWebhooks.length == 0)
+        GameChannel.createWebhook("Minecraft Chat Webhook");
+
+    for (var i = 0; i < AllWebhooks.length; i++)
+    {
+        if (AllWebhooks[i].name == "Minecraft Chat Webhook")
+        {
+            webhook = AllWebhooks[i];
+            break;
+        }
+        else if (i == AllWebhooks.length - 1)
+        {
+            webhook = await GameChannel.createWebhook("Minecraft Chat Webhook");
+            break;
+        }
+    }
+
     SendData("Server Starting");
 });
 
@@ -72,15 +100,59 @@ ptyProcess.on('data', function(data)
     }
 });
 
-function SendData(FilteredData)
+async function SendData(FilteredData)
 {
     process.stdout.write(FilteredData);
-    bot.channels.cache.find(c => c.id == GameChatChannel).send(FilteredData);
+
+    if (FilteredData.includes("<"))
+    {
+        let username = FilteredData.split(" ")[0].slice(1, -1);
+        
+        webhook.send(FilteredData.slice(username.length + 2), {username: username, avatarURL: await GetPlayerIcon(username)});
+    }
+    else
+        webhook.send(FilteredData, {username: "Server", avatarURL: bot.user.avatarURL()});
+}
+
+async function GetPlayerIcon(Username)
+{
+    await jimp.read(await StealSkin(Username))
+    .then(image => 
+    {
+        image.crop(8, 8, 8, 8).resize(128, 128, jimp.RESIZE_NEAREST_NEIGHBOR).contain(128, 256).contain(256, 256).write('skin_face.png');
+    })
+    .catch(err =>
+    {
+        console.log(err);
+    });
+
+    return (await webhook.edit({avatar: "./skin_face.png"})).avatarURL();
+}
+
+async function StealSkin(Username)
+{
+    var SkinURL;
+
+    try 
+    {
+        await fetch(`https://api.mojang.com/users/profiles/minecraft/${Username}`, {method: "Get"}).then(res => res.json())
+        .then(async (json) =>
+        {
+            await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${json.id}/`, {method: "Get"}).then(res => res.json())
+            .then(async (json) => {SkinURL = await JSON.parse(Buffer.from(json.properties[0].value, 'base64').toString()).textures.SKIN.url;});
+        });
+    } 
+    catch (err) 
+    {
+        SkinURL = "http://textures.minecraft.net/texture/1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b";
+    }
+
+    return await SkinURL;
 }
 
 bot.on('message', async message =>
 {
-    if (message.author.id == bot.user.id || !message.content || message.channel.id != GameChatChannel || ServerStopped)
+    if (message.author.bot || !message.content || message.channel.id != GameChatChannel || ServerStopped)
         return;
 
     var UserName = message.author.tag.slice(0, -5);
